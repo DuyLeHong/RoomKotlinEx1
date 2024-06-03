@@ -14,11 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,6 +43,7 @@ class MainActivity : ComponentActivity() {
             RoomKotlinEx1Theme {
                 Scaffold(
                     modifier = Modifier
+                        .padding(16.dp)
                         .fillMaxSize()
                         .safeDrawingPadding()
                 ) {  innerPadding ->
@@ -55,19 +63,12 @@ fun Greeting() {
 
     val db = Room.databaseBuilder(
         context,
-        UserDatabase::class.java, "users-db"
+        UserDatabase::class.java, "users-db1"
     ).allowMainThreadQueries().build()
 
-    val users = mutableListOf<User>()
-    users.add(User(firstName = "Duy", lastName = "Le"))
-    users.add(User(firstName = "Long", lastName = "Nguyen"))
-    users.add(User(firstName = "Tuan", lastName = "Tran"))
-
-    for (user in users) {
-        db.userDao().insertAll(user)
+    var userlistKq by remember {
+        mutableStateOf(db.userDao().getAll().toMutableStateList())
     }
-
-    val userlistKq = db.userDao().getAll()
 
     Column (Modifier.fillMaxWidth()){
         Text(
@@ -75,11 +76,22 @@ fun Greeting() {
             style = MaterialTheme.typography.titleLarge
         )
 
+        Button(onClick = {
+            val user = User(firstName = "Duy", lastName = "Le")
+            db.userDao().insertAll(user)
+
+            userlistKq = db.userDao().getAll().toMutableStateList()
+        }) {
+            Text(text = "Thêm SV")
+        }
+
         LazyColumn {
 
             items(userlistKq) {
                 Row (
-                    modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ){
                     Text(modifier = Modifier.weight(1f), text = it.uid.toString())
                     Text(modifier = Modifier.weight(1f), text = it.firstName.toString())
