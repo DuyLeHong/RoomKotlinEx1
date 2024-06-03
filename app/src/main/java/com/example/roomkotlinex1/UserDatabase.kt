@@ -10,6 +10,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 
 @Database(entities = arrayOf(User::class), version = 1)
@@ -27,14 +29,14 @@ data class User(
 @Dao
 interface UserDao {
     @Query("SELECT * FROM user")
-    fun getAll(): List<User>
+    fun getAll(): Flow<List<User>>
 
     @Query("SELECT * FROM user WHERE uid IN (:userIds)")
-    fun loadAllByIds(userIds: IntArray): List<User>
+    fun loadAllByIds(userIds: IntArray): Flow<User>
 
     @Insert
-    fun insertAll(vararg users: User)
+    suspend fun insertAll(vararg users: User)
 
     @Delete
-    fun delete(user: User)
+    suspend fun delete(user: User)
 }

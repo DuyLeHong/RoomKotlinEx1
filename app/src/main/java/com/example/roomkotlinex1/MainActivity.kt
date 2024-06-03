@@ -20,10 +20,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
@@ -32,6 +35,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.room.Room
 import com.example.roomkotlinex1.ui.theme.RoomKotlinEx1Theme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
 
@@ -55,19 +65,33 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @Preview
 @Composable
 fun Greeting() {
 
     val context = LocalContext.current
 
+    val coroutineScope = rememberCoroutineScope()
+
     val db = Room.databaseBuilder(
         context,
-        UserDatabase::class.java, "users-db1"
-    ).allowMainThreadQueries().build()
+        UserDatabase::class.java, "users-db2"
+    ).build()
 
-    var userlistKq by remember {
-        mutableStateOf(db.userDao().getAll().toMutableStateList())
+
+    //val (loadResult, setLoadResult) = remember { mutableStateOf<String?>(null) }
+
+    //var userlistKq = db.userDao().getAll()
+
+    var users by remember {
+        mutableStateOf(mutableListOf<User>())
+    }
+
+    coroutineScope.launch {
+        db.userDao().getAll().collect { clientEntities ->
+            users = clientEntities.toMutableList()
+        }
     }
 
     Column (Modifier.fillMaxWidth()){
@@ -78,16 +102,22 @@ fun Greeting() {
 
         Button(onClick = {
             val user = User(firstName = "Duy", lastName = "Le")
-            db.userDao().insertAll(user)
 
-            userlistKq = db.userDao().getAll().toMutableStateList()
+            coroutineScope.launch {
+                db.userDao().insertAll(user)
+
+                db.userDao().getAll().collect { clientEntities ->
+                    users = clientEntities.toMutableList()
+                }
+            }
+
         }) {
             Text(text = "Thêm SV")
         }
 
         LazyColumn {
 
-            items(userlistKq) {
+            items(users) {
                 Row (
                     modifier = Modifier
                         .fillMaxWidth()
@@ -100,7 +130,5 @@ fun Greeting() {
                 Divider()
             }
         }
-
-
     }
 }
